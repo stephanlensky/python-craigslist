@@ -38,6 +38,8 @@ class CraigslistBase(object):
         'bundle_duplicates': {'url_key': 'bundleDuplicates', 'value': 1},
         'search_distance': {'url_key': 'search_distance', 'value': None},
         'zip_code': {'url_key': 'postal', 'value': None},
+        'search_nearby': {'url_key': 'searchNearby', 'value': None},
+        'nearby_area': {'url_key': 'nearbyArea', 'value': None}
     }
     extra_filters = {}
     __list_filters = {}  # Cache for list filters requested by URL
@@ -131,6 +133,13 @@ class CraigslistBase(object):
         soup = bs(response.content)
         sublinks = soup.find('ul', {'class': 'sublinks'})
         return sublinks and sublinks.find('a', text=area) is not None
+
+    def get_listing(self, result):
+        result = dict(result)
+        detail_soup = self.fetch_content(result['url'])
+        self.geotag_result(result, detail_soup)
+        self.include_details(result, detail_soup)
+        return result
 
     def get_results(self, limit=None, start=0, sort_by=None, geotagged=False,
                     include_details=False):
@@ -294,7 +303,7 @@ class CraigslistBase(object):
         image_tags = image_tags[1:] if len(image_tags) > 1 else image_tags
         images = []
         for img in image_tags:
-            if 'src' not in img:  # Some posts contain empty <img> tags.
+            if 'src' not in img.attrs:  # Some posts contain empty <img> tags.
                 continue
             img_link = img['src'].replace('50x50c', '600x450')
             images.append(img_link)
